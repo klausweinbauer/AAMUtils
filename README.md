@@ -18,7 +18,7 @@ generate the input data:
 echo "CCC[Cl:1].[N:2]>>CCC[N:2].[Cl:1]" > testinput.txt
 ```
 
-Next, run AAMUtils to expand the partial AAMs. 
+Next, run AAMUtils to expand the partial AAM. 
 
 ```bash 
 python3 ./aamutils/__main__.py expand testinput.txt
@@ -50,7 +50,7 @@ Here is an overview of implemented functionallity:
 - Reaction center validity checks
 - ITS graph generation
 - Expand partial AAM to complete AAM on balanced reactions
-- AAM based on minimal chemical distance (MCD) for balanced reactions
+- AAMing based on minimal chemical distance (MCD) for balanced reactions
 
 ## License
 
