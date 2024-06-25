@@ -28,16 +28,19 @@ The output is written to 'testinput_extended.json'.
 
 ```bash 
 cat testinput_extended.json 
->>> [
->>>     {
->>>         "input": "CCC[Cl:1].[N:2]>>CCC[N:2].[Cl:1]",
->>>         "expanded_aam": "[Cl:1][CH2:5][CH2:4][CH3:3].[NH3:2]>>[ClH:1].[NH2:2][CH2:5][CH2:4][CH3:3]",
->>>         "ilp_status": "Optimal",
->>>         "optimization_result": 2.0,
->>>         "invalid_reaction_center": false,
->>>         "reaction_edges": 3
->>>     }
->>> ]
+```
+
+```bash 
+[
+    {
+        "input": "CCC[Cl:1].[N:2]>>CCC[N:2].[Cl:1]",
+        "expanded_aam": "[Cl:1][CH2:5][CH2:4][CH3:3].[NH3:2]>>[ClH:1].[NH2:2][CH2:5][CH2:4][CH3:3]",
+        "ilp_status": "Optimal",
+        "optimization_result": 2.0,
+        "invalid_reaction_center": false,
+        "reaction_edges": 3
+    }
+]
 ```
 
 ## Functionality
