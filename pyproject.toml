@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aamutils"
+version = "0.0.1"
+authors = [
+	{name="Klaus Weinbauer", email="klaus@bioinf.uni-leipzig.de"}
+	]
+description = "Collection of atom-atom-mapping utility functions."
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"License :: OSI Approved :: MIT License",
+	"Operating System :: OS Independent",
+]
+dependencies = [
+	"fgutils>=0.0.17,<0.1.0",
+	"networkx==3.3",
+	"numpy>=1.26.0,<2.0.0",
+	"pillow==10.3.0",
+	"PuLP==2.8.0",
+	"rdkit==2024.3.1",
+	"scipy==1.14.0",
+]
+
+[project.urls]
+homepage = "https://github.com/klausweinbauer/AAMUtils"
+source = "https://github.com/klausweinbauer/AAMUtils"
+issues = "https://github.com/klausweinbauer/AAMUtils/issues"
