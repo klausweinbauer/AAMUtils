@@ -30,7 +30,7 @@ The output is written to 'testinput_extended.json'.
 cat testinput_extended.json 
 ```
 
-```bash 
+```json 
 [
     {
         "input": "CCC[Cl:1].[N:2]>>CCC[N:2].[Cl:1]",
