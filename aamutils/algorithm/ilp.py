@@ -3,103 +3,130 @@ import pulp as lp
 import networkx as nx
 
 
-def _bijection_constraint(problem, M, n):
-    G_n, H_n = n[0], n[1]
-    for i in range(G_n):
-        for j in range(H_n):
-            problem += M[i, j] >= 0
-            problem += M[i, j] <= 1
+def _bijection_constraint(problem, X):
+    m = int(np.sqrt(len(X.keys())))
+    for i in range(m):
+        for j in range(m):
+            problem += X[i, j] >= 0
+            problem += X[i, j] <= 1
 
-    for j in range(H_n):
+    for j in range(m):
         problem += (
-            lp.lpSum([M[i, j] for i in range(G_n)]) == 1,
+            lp.lpSum([X[i, j] for i in range(m)]) == 1,
             "bijection_col_{}".format(j),
         )
-    for i in range(G_n):
+    for i in range(m):
         problem += (
-            lp.lpSum([M[i, j] for j in range(H_n)]) == 1,
+            lp.lpSum([X[i, j] for j in range(m)]) == 1,
             "bijection_row_{}".format(i),
         )
 
 
-def _beta_constraint(problem, M, n, delta, A_G, A_H, beta_map):
-    G_n, H_n = n[0], n[1]
+def _beta_constraint(problem, X, beta_map):
     for bi, bj, _ in beta_map:
-        problem += (M[bi, bj] == 1, "beta_constraint1_{}-{}".format(bi, bj))
+        problem += (X[bi, bj] == 1, "beta_constraint1_{}-{}".format(bi, bj))
 
-    for i in range(G_n):
-        for j in range(H_n):
-            problem += delta[i, j] == A_H[i, j] - (
-                lp.lpSum([A_G[i, k] * M[k, j] for k in range(G_n)])
+
+def _edge_diff_constraint(problem, X, D, A_G, A_H):
+    m = int(np.sqrt(len(D.keys())))
+    for i in range(m):
+        for j in range(m):
+            problem += D[i, j] == A_H[i, j] - (
+                lp.lpSum([A_G[i, k] * X[k, j] for k in range(m)])
             )
 
 
-def _atom_type_constraint(problem, M, n, G, H):
-    G_n, H_n = n[0], n[1]
-    for i in range(G_n):
-        for j in range(H_n):
+def _atom_type_constraint(problem, X, G, H):
+    m = int(np.sqrt(len(X.keys())))
+    assert m == len(G.nodes)
+    assert m == len(H.nodes)
+    for i in range(m):
+        for j in range(m):
             g_sym = G.nodes(data=True)[i]
             h_sym = H.nodes(data=True)[j]
             if g_sym != h_sym:
-                problem += (M[i, j] == 0, "atom_type_constraint_{}-{}".format(i, j))
+                problem += (X[i, j] == 0, "atom_type_constraint_{}-{}".format(i, j))
 
 
-def _absolute_edge_diff(problem, n, delta, delta_abs):
-    G_n, H_n = n[0], n[1]
-    for i in range(G_n):
-        for j in range(H_n):
-            problem += delta_abs[i, j] >= delta[i, j]
-            problem += delta_abs[i, j] >= -delta[i, j]
+def _indicator_constraint(problem, D, G, S, k):
+    m = int(np.sqrt(len(D.keys())))
+    assert m == int(np.sqrt(len(G.keys())))
+    assert m == int(np.sqrt(len(S.keys())))
+
+    for i in range(m):
+        for j in range(m):
+            problem += (
+                0 <= -D[i, j] + k * G[i, j],
+                "g_indicator_constraint_lower_{}-{}".format(i, j),
+            )
+            problem += (
+                -D[i, j] + k * G[i, j] <= k - 1,
+                "g_indicator_constraint_upper_{}-{}".format(i, j),
+            )
+            problem += (
+                0 <= D[i, j] + k * S[i, j],
+                "s_indicator_constraint_lower_{}-{}".format(i, j),
+            )
+            problem += (
+                D[i, j] + k * S[i, j] <= k - 1,
+                "s_indicator_constraint_upper_{}-{}".format(i, j),
+            )
 
 
 def expand_partial_aam_balanced(G, H, beta_map=[], bond_key="bond"):
     A_G = nx.adjacency_matrix(G, weight=bond_key)
     A_H = nx.adjacency_matrix(H, weight=bond_key)
+    k = np.max([np.max(A_G.todense()), np.max(A_H.todense())])
+    m = len(G.nodes)
 
-    G_n = len(G.nodes)
-    H_n = len(H.nodes)
-
-    if G_n != H_n:
+    if m != len(H.nodes):
         raise ValueError(
             (
                 "Reaction is not balanced. " + "{} reactant atoms and {} product atoms."
             ).format(len(G.nodes), len(H.nodes))
         )
 
-    M = lp.LpVariable.dicts(
-        "M",
-        [(i, j) for i in range(G_n) for j in range(H_n)],
+    # Mapping matrix X
+    lp_X = lp.LpVariable.dicts(
+        "X",
+        [(i, j) for i in range(m) for j in range(m)],
         lowBound=0,
         upBound=1,
         cat=lp.LpInteger,
     )
-    delta = lp.LpVariable.dicts(
-        "delta", [(i, j) for i in range(G_n) for j in range(H_n)]
+
+    # Difference matrix D
+    lp_D = lp.LpVariable.dicts("D", [(i, j) for i in range(m) for j in range(m)])
+
+    # Indicator matrix G and S
+    lp_G = lp.LpVariable.dicts(
+        "G", [(i, j) for i in range(m) for j in range(m)], cat=lp.LpInteger
     )
-    delta_abs = lp.LpVariable.dicts(
-        "delta_abs", [(i, j) for i in range(G_n) for j in range(H_n)]
+    lp_S = lp.LpVariable.dicts(
+        "S", [(i, j) for i in range(m) for j in range(m)], cat=lp.LpInteger
     )
 
-    e_diff = lp.LpVariable("e_diff", 0, None, lp.LpInteger)
+    # Non-zero counter function for D
+    lp_f = lp.LpVariable("f", 0, None, lp.LpInteger)
 
     problem = lp.LpProblem("AAM", lp.LpMinimize)
 
-    problem += (e_diff, "objective")
+    problem += (lp_f, "objective")
     problem += (
-        e_diff == lp.lpSum([delta_abs[i, j] for i in range(G_n) for j in range(H_n)]),
+        lp_f == lp.lpSum([lp_G[i, j] + lp_S[i, j] for i in range(m) for j in range(m)]),
         "objective",
     )
 
-    n = (G_n, H_n)
-    _bijection_constraint(problem, M, n)
-    _beta_constraint(problem, M, n, delta, A_G, A_H, beta_map)
-    _atom_type_constraint(problem, M, n, G, H)
-    _absolute_edge_diff(problem, n, delta, delta_abs)
+    _bijection_constraint(problem, lp_X)
+    _beta_constraint(problem, lp_X, beta_map)
+    _atom_type_constraint(problem, lp_X, G, H)
+    _edge_diff_constraint(problem, lp_X, lp_D, A_G, A_H)
+    _indicator_constraint(problem, lp_X, lp_G, lp_S, k)
 
     problem.solve(lp.PULP_CBC_CMD(logPath=r"solver.log"))
 
-    np_M = np.zeros([G_n, H_n])
-    for (i, j), v in M.items():
-        np_M[i, j] = v.value()
+    np_X = np.zeros([m, m], dtype=np.int32)
+    for (i, j), v in lp_X.items():
+        np_X[i, j] = int(v.value())
 
-    return lp.LpStatus[problem.status], np_M, e_diff.value()
+    return lp.LpStatus[problem.status], np_X, lp_f.value()
