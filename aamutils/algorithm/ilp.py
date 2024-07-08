@@ -2,6 +2,8 @@ import numpy as np
 import pulp as lp
 import networkx as nx
 
+from aamutils.utils import get_beta_map
+
 
 def _bijection_constraint(problem, X):
     m = int(np.sqrt(len(X.keys())))
@@ -73,7 +75,28 @@ def _indicator_constraint(problem, D, G, S, k):
             )
 
 
-def expand_partial_aam_balanced(G, H, beta_map=[], bond_key="bond"):
+def expand_partial_aam_balanced(
+    G: nx.Graph,
+    H: nx.Graph,
+    beta_map: None | list[tuple[int, int, int]] = None,
+    bond_key="bond",
+) -> tuple[np.ndarray, str, float]:
+    """Function to extend the partial atom-atom map beta of the balanced
+    reaction G \u2192 H to a full atom-atom map based on the Minimal Chemical
+    Distance (minimize the number of changing bonds).
+
+    :param G: Educt molecular graph.
+    :param H: Product molecular graph.
+    :param beta_map: (optional) A list of predefined atom-atom mappings. If not
+        specified the existing mapping in G and H will be used.
+    :param bond_key: (optional) The edge label in G and H which encodes the
+        bond order.
+
+    :returns: A 3-tuple. The first element is the mapping matrix X. The second
+        element is the status string of the ILP solver (e.g. 'Optimal') and the
+        third is the ILP solution value.
+    """
+
     A_G = nx.adjacency_matrix(G, weight=bond_key)
     A_H = nx.adjacency_matrix(H, weight=bond_key)
     k = np.max([np.max(A_G.todense()), np.max(A_H.todense())])
@@ -85,6 +108,9 @@ def expand_partial_aam_balanced(G, H, beta_map=[], bond_key="bond"):
                 "Reaction is not balanced. " + "{} reactant atoms and {} product atoms."
             ).format(len(G.nodes), len(H.nodes))
         )
+
+    if beta_map is None:
+        beta_map = get_beta_map(G, H)
 
     # Mapping matrix X
     lp_X = lp.LpVariable.dicts(
@@ -129,4 +155,4 @@ def expand_partial_aam_balanced(G, H, beta_map=[], bond_key="bond"):
     for (i, j), v in lp_X.items():
         np_X[i, j] = int(v.value())
 
-    return lp.LpStatus[problem.status], np_X, lp_f.value()
+    return np_X, lp.LpStatus[problem.status], lp_f.value()
