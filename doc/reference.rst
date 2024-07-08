@@ -5,8 +5,8 @@ References
 Algorithm
 =========
 
-ILP
----
-
 .. automodule:: aamutils.algorithm.ilp
+   :members:
+
+.. automodule:: aamutils.algorithm.aaming
    :members:
