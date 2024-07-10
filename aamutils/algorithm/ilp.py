@@ -55,25 +55,16 @@ def _indicator_constraint(problem, D, G, S, k):
     assert m == int(np.sqrt(len(G.keys())))
     assert m == int(np.sqrt(len(S.keys())))
 
-    print("k ", k)
     for i in range(m):
         for j in range(m):
             problem += (
-                0 <= -D[i, j] + 1 + k * G[i, j] <= k - 1,
+                D[i, j] <= k * G[i, j],
                 "g_indicator_constraint_lower_{}-{}".format(i, j),
             )
-            # problem += (
-            #     -D[i, j] + k * G[i, j] <= k - 1,
-            #     "g_indicator_constraint_upper_{}-{}".format(i, j),
-            # )
             problem += (
-                0 <= D[i, j] - 1 + k * S[i, j] <= k - 1,
+                -D[i, j] <= k * S[i, j],
                 "s_indicator_constraint_lower_{}-{}".format(i, j),
             )
-            # problem += (
-            #     D[i, j] + k * S[i, j] <= k - 1,
-            #     "s_indicator_constraint_upper_{}-{}".format(i, j),
-            # )
 
 
 def expand_partial_aam_balanced(
@@ -129,16 +120,16 @@ def expand_partial_aam_balanced(
     lp_G = lp.LpVariable.dicts(
         "G",
         [(i, j) for i in range(m) for j in range(m)],
-        #lowBound=0,
-        #upBound=1,
-        cat=lp.LpInteger,
+        # lowBound=0,
+        # upBound=1,
+        cat=lp.LpBinary,
     )
     lp_S = lp.LpVariable.dicts(
         "S",
         [(i, j) for i in range(m) for j in range(m)],
-        #lowBound=0,
-        #upBound=1,
-        cat=lp.LpInteger,
+        # lowBound=0,
+        # upBound=1,
+        cat=lp.LpBinary,
     )
 
     # Non-zero counter function for D
@@ -156,29 +147,12 @@ def expand_partial_aam_balanced(
     _beta_constraint(problem, lp_X, beta_map)
     _atom_type_constraint(problem, lp_X, G, H)
     _edge_diff_constraint(problem, lp_X, lp_D, A_G, A_H)
-    _indicator_constraint(problem, lp_X, lp_G, lp_S, k)
+    _indicator_constraint(problem, lp_D, lp_G, lp_S, k)
 
-    problem.solve(lp.PULP_CBC_CMD(logPath=r"solver.log"))
+    status = problem.solve(lp.PULP_CBC_CMD(logPath=r"solver.log"))
 
     np_X = np.zeros([m, m], dtype=np.int32)
     for (i, j), v in lp_X.items():
         np_X[i, j] = int(v.value())
 
-    np_D = np.zeros([m, m], dtype=np.int32)
-    for (i, j), v in lp_D.items():
-        np_D[i, j] = int(v.value())
-
-    np_G = np.zeros([m, m], dtype=np.int32)
-    for (i, j), v in lp_G.items():
-        np_G[i, j] = int(v.value())
-
-    np_S = np.zeros([m, m], dtype=np.int32)
-    for (i, j), v in lp_S.items():
-        np_S[i, j] = int(v.value())
-
-    print("D G S")
-    print(np_D)
-    print(np_G)
-    print(np_S)
-
-    return np_X, lp.LpStatus[problem.status], lp_f.value()
+    return np_X, lp.LpStatus[status], lp_f.value()
