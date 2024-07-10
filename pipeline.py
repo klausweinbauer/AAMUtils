@@ -55,7 +55,7 @@ for i, entry in enumerate(_data):
 print("{} of {} are equivalent".format(len(data), len(_data)))
 
 target_cnt = 1000
-remove_cnt_conf = 2
+remove_cnt_conf = 5
 testcase_cnt = 0
 success_cnt = 0
 start_time = time.time()
@@ -63,6 +63,8 @@ for i, entry in enumerate(data):
     try:
         remove_cnt = 0
         nodes = list(entry["RC"].nodes)
+        if len(nodes) < remove_cnt_conf:
+            continue
         samples = random.sample(nodes, remove_cnt_conf)
         for rand_n in samples:
             G_idx, H_idx = nx.get_node_attributes(entry["ITS"], "idx_map")[rand_n]
