@@ -98,3 +98,28 @@ def is_valid_rxn_smiles(smiles):
     if mol2 is None:
         return False
     return True
+
+
+def print_graph(graph):
+    print(
+        "Graph Nodes: {}".format(
+            " ".join(
+                [
+                    "[{}]{}:{}".format(
+                        n[0], n[1].get("symbol", None), n[1].get("aam", None)
+                    )
+                    for n in graph.nodes(data=True)
+                ]
+            )
+        )
+    )
+    print(
+        "Graph Edges: {}".format(
+            " ".join(
+                [
+                    "[{}]-[{}]:{}".format(n[0], n[1], n[2]["bond"])
+                    for n in graph.edges(data=True)
+                ]
+            )
+        )
+    )
