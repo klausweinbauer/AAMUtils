@@ -34,8 +34,7 @@ def run(args):
             G = mol_to_graph(r_mol)
             H = mol_to_graph(p_mol)
 
-            beta_map = get_beta_map(G, H)
-            status, M, e_diff = expand_partial_aam_balanced(G, H, beta_map)
+            M, status, e_diff = expand_partial_aam_balanced(G, H)
 
             set_aam(G, H, M)
 
