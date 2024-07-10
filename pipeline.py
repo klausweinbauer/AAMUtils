@@ -1,7 +1,11 @@
+import time
 import traceback
 import copy
 import json
 import collections
+import random
+import networkx as nx
+import numpy as np
 
 import rdkit.Chem.rdmolfiles as rdmolfiles
 import rdkit.Chem.rdmolops as rdmolops
@@ -17,10 +21,8 @@ with open("testdata.json", "r") as f:
 data = []
 rc_size_hist = collections.defaultdict(lambda: 0)
 for i, entry in enumerate(_data):
-    # if i != 19:
-    #     continue
-    if len(data) == 100:
-        break
+    # if len(data) == 100:
+    #     break
     if entry["equivalent"] is False:
         continue
     try:
@@ -29,10 +31,13 @@ for i, entry in enumerate(_data):
         smiles = smiles.split(">>")
         g_mol = rdmolfiles.MolFromSmiles(smiles[0])
         h_mol = rdmolfiles.MolFromSmiles(smiles[1])
-        g_mol = rdmolops.AddHs(g_mol, 1)
-        h_mol = rdmolops.AddHs(h_mol, 1)
+        # g_mol = rdmolops.AddHs(g_mol, 1)
+        # h_mol = rdmolops.AddHs(h_mol, 1)
         G = mol_to_graph(g_mol)
         H = mol_to_graph(h_mol)
+        if len(G.nodes) != len(H.nodes):
+            print("Skip because unbalanced")
+            continue
         ITS = get_its(G, H)
         RC = get_rc(ITS)
         _entry["G"] = G
@@ -42,30 +47,38 @@ for i, entry in enumerate(_data):
         rc_size_hist[len(RC.nodes)] += 1
         data.append(_entry)
     except Exception as e:
-        traceback.print_exc()
-        print(smiles)
+        # traceback.print_exc()
+        # print(smiles)
         print("Error at index {}".format(i))
-        break
+        # break
 
 print("{} of {} are equivalent".format(len(data), len(_data)))
 
-expanded_data = []
-output_data = []
+target_cnt = 1000
+remove_cnt_conf = 2
+testcase_cnt = 0
+success_cnt = 0
+start_time = time.time()
 for i, entry in enumerate(data):
     try:
         remove_cnt = 0
-        # print(entry["G"].nodes(data=True))
-        # print(entry["H"].nodes(data=True))
-        # print(entry["local_mapper"])
-        for n, d in entry["ITS"].nodes(data=True):
-            if n not in entry["RC"]:
-                remove_cnt += 1
-                G_idx, H_idx = d["idx_map"]
-                entry["G"].nodes[G_idx]["aam"] = 0
-                entry["H"].nodes[H_idx]["aam"] = 0
-        if remove_cnt == 0:
-            print("[{}] Skip because RC == ITS".format(entry["R-id"]))
+        nodes = list(entry["RC"].nodes)
+        samples = random.sample(nodes, remove_cnt_conf)
+        for rand_n in samples:
+            G_idx, H_idx = nx.get_node_attributes(entry["ITS"], "idx_map")[rand_n]
+            remove_cnt += 1
+            entry["G"].nodes[G_idx]["aam"] = 0
+            entry["H"].nodes[H_idx]["aam"] = 0
+        if remove_cnt != remove_cnt_conf:
+            print(
+                "[{}] Skip because number of removed aams is invalid ({} != {}).".format(
+                    remove_cnt_conf, remove_cnt
+                )
+            )
             continue
+
+        g_mol = graph_to_mol(entry["G"])
+        h_mol = graph_to_mol(entry["H"])
 
         M, status, value = expand_partial_aam_balanced(entry["G"], entry["H"])
 
@@ -73,50 +86,50 @@ for i, entry in enumerate(data):
         ITS = get_its(entry["G"], entry["H"])
         RC = get_rc(ITS)
 
+        success = len(entry["RC"].nodes) == len(RC.nodes) and len(
+            entry["RC"].edges
+        ) == len(RC.edges)
+
+        testcase_cnt += 1
+        if success:
+            success_cnt += 1
+
         print(
-            "[{}] Removed {} aam numbers. RC {} -> {}".format(
-                entry["R-id"], remove_cnt, len(entry["RC"].nodes), len(RC.nodes)
+            (
+                "[{:>6}] {} {} | Removed {} aam numbers. "
+                + "RC Nodes: {} -> {} Edges: {} -> {} | "
+                + "ETA: {}"
+            ).format(
+                entry["R-id"],
+                status,
+                "SUCC" if success else "FAIL",
+                remove_cnt,
+                len(entry["RC"].nodes),
+                len(RC.nodes),
+                len(entry["RC"].edges),
+                len(RC.edges),
+                time.strftime(
+                    "%H:%M:%S",
+                    time.gmtime(
+                        int(time.time() - start_time)
+                        * (
+                            (np.min([len(data), target_cnt]) - testcase_cnt)
+                            / testcase_cnt
+                        )
+                    ),
+                ),
             )
         )
 
-        g_mol = graph_to_mol(entry["G"])
-        h_mol = graph_to_mol(entry["H"])
-
-        g_mol = rdmolops.RemoveHs(g_mol, 0)
-        h_mol = rdmolops.RemoveHs(h_mol, 0)
-
-        entry["expanded"] = "{}>>{}".format(
-            rdmolfiles.MolToSmiles(g_mol), rdmolfiles.MolToSmiles(h_mol)
-        )
-        expanded_data.append(entry)
-        output_data.append(
-            {
-                "R-id": entry["R-id"],
-                "local_mapper": entry["local_mapper"],
-                "expanded_aam": entry["expanded"],
-            }
-        )
-        if len(output_data) % 2 == 0:
-            with open("expanded.json", "w") as f:
-                json.dump(output_data, f, indent=4)
-                break
+        if testcase_cnt == target_cnt:
+            break
     except Exception as e:
         print("[{}] Error: {}".format(entry["R-id"], e))
+        traceback.print_exc()
 
-print("Expanded aams {}".format(len(expanded_data)))
-
-
-# ordered_data = sorted(enumerate(data), key=lambda x: (len(x[1]["G"]), len(x[1]["RC"])))
-# print(ordered_data[0])
-# for i, entry in enumerate(ordered_data):
-#     if len(entry["RC"]) > 7:
-#         print("Index: ", i)
-#         break
-
-# print(ordered_data[i])
-# print_graph(ordered_data[i]["G"])
-# print_graph(ordered_data[i]["H"])
-# print_graph(ordered_data[i]["RC"])
-# print(len(ordered_data[i]["G"]))
-# print(len(ordered_data[i]["RC"]))
-# print(ordered_data[i]["local_mapper"])
+print(
+    (
+        "Expanding the RC with {} node was successful in {:.2%} "
+        + "({} out of {} testcases)."
+    ).format(remove_cnt_conf, success_cnt / testcase_cnt, success_cnt, testcase_cnt)
+)
