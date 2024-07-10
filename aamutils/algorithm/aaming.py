@@ -29,7 +29,7 @@ def _add_its_edges(ITS, G, H, eta, bond_key):
         e_H = None
         if H.has_edge(n_H1, n_H2):
             e_H = H[n_H1][n_H2][bond_key]
-        if not ITS.has_edge(n_ITS1, n_ITS2):
+        if not ITS.has_edge(n_ITS1, n_ITS2) and n_ITS1 > 0 and n_ITS2 > 0:
             ITS.add_edge(n_ITS1, n_ITS2, bond=(e_G, e_H))
 
     for n1, n2, d in H.edges(data=True):
@@ -40,7 +40,9 @@ def _add_its_edges(ITS, G, H, eta, bond_key):
         n_ITS2 = eta_H[n2]
         n_G1 = eta_G_inv[n_ITS1]
         n_G2 = eta_G_inv[n_ITS2]
-        if not G.has_edge(n_G1, n_G2):
+        if n_G1 is None or n_G2 is None:
+            continue
+        if not G.has_edge(n_G1, n_G2) and n_ITS1 > 0 and n_ITS2 > 0:
             ITS.add_edge(n_ITS1, n_ITS2, bond=(None, e_H))
 
 
