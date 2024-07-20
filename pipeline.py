@@ -56,28 +56,35 @@ print("{} of {} are equivalent".format(len(data), len(_data)))
 
 target_cnt = 1000
 remove_cnt_conf = 5
+#remove_ratio = 0.75 
+remove_type = "keep_only_rc"
 testcase_cnt = 0
 success_cnt = 0
 start_time = time.time()
 for i, entry in enumerate(data):
     try:
         remove_cnt = 0
-        nodes = list(entry["RC"].nodes)
-        if len(nodes) < remove_cnt_conf:
-            continue
-        samples = random.sample(nodes, remove_cnt_conf)
+
+        if remove_type == "rc_cnt":
+            nodes = list(entry["RC"].nodes)
+            if len(nodes) < remove_cnt_conf:
+                continue
+            samples = random.sample(nodes, remove_cnt_conf)
+        elif remove_type == "keep_only_rc":
+            rc_nodes = list(entry["RC"].nodes)
+            nodes = list(entry["ITS"].nodes)
+            samples = [n for n in nodes if n not in rc_nodes]
+        elif remove_type == "rc_ratio":
+            nodes = list(entry["RC"].nodes)
+            samples = random.sample(nodes, int(len(nodes) * remove_ratio))
+        else:
+            raise ValueError()
+
         for rand_n in samples:
             G_idx, H_idx = nx.get_node_attributes(entry["ITS"], "idx_map")[rand_n]
             remove_cnt += 1
             entry["G"].nodes[G_idx]["aam"] = 0
             entry["H"].nodes[H_idx]["aam"] = 0
-        if remove_cnt != remove_cnt_conf:
-            print(
-                "[{}] Skip because number of removed aams is invalid ({} != {}).".format(
-                    remove_cnt_conf, remove_cnt
-                )
-            )
-            continue
 
         g_mol = graph_to_mol(entry["G"])
         h_mol = graph_to_mol(entry["H"])
@@ -88,9 +95,15 @@ for i, entry in enumerate(data):
         ITS = get_its(entry["G"], entry["H"])
         RC = get_rc(ITS)
 
-        success = len(entry["RC"].nodes) == len(RC.nodes) and len(
-            entry["RC"].edges
-        ) == len(RC.edges)
+        success = nx.is_isomorphic(
+            entry["ITS"],
+            ITS,
+            node_match=lambda n1, n2: n1["symbol"] == n2["symbol"],
+            edge_match=lambda e1, e2: e1["bond"] == e2["bond"],
+        )
+        # success = len(entry["RC"].nodes) == len(RC.nodes) and len(
+        #     entry["RC"].edges
+        # ) == len(RC.edges)
 
         testcase_cnt += 1
         if success:
@@ -98,12 +111,14 @@ for i, entry in enumerate(data):
 
         print(
             (
-                "[{:>6}] {} {} | Removed {} aam numbers. "
-                + "RC Nodes: {} -> {} Edges: {} -> {} | "
+                "[{:>6}|{:>4}] {} {:>2} {} | Removed {} ids. "
+                + "RC Nodes: {}->{} Edges: {}->{} | "
                 + "ETA: {}"
             ).format(
                 entry["R-id"],
+                testcase_cnt,
                 status,
+                int(value),
                 "SUCC" if success else "FAIL",
                 remove_cnt,
                 len(entry["RC"].nodes),
@@ -130,8 +145,7 @@ for i, entry in enumerate(data):
         traceback.print_exc()
 
 print(
-    (
-        "Expanding the RC with {} node was successful in {:.2%} "
-        + "({} out of {} testcases)."
-    ).format(remove_cnt_conf, success_cnt / testcase_cnt, success_cnt, testcase_cnt)
+    ("Expanding was successful in {:.2%} " + "({} out of {} testcases).").format(
+        success_cnt / testcase_cnt, success_cnt, testcase_cnt
+    )
 )
