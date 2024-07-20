@@ -7,10 +7,6 @@ from aamutils.utils import get_beta_map
 
 def _bijection_constraint(problem, X):
     m = int(np.sqrt(len(X.keys())))
-    for i in range(m):
-        for j in range(m):
-            problem += X[i, j] >= 0
-            problem += X[i, j] <= 1
 
     for j in range(m):
         problem += (
@@ -33,19 +29,21 @@ def _edge_diff_constraint(problem, X, D, A_G, A_H):
     m = int(np.sqrt(len(D.keys())))
     for i in range(m):
         for j in range(m):
-            problem += D[i, j] == A_H[i, j] - (
-                lp.lpSum([A_G[i, k] * X[k, j] for k in range(m)])
-            )
+            problem += D[i, j] == lp.lpSum(
+                [X[i, k] * A_H[k, j] for k in range(m)]
+            ) - lp.lpSum([A_G[i, k] * X[k, j] for k in range(m)])
 
 
-def _atom_type_constraint(problem, X, G, H):
+def _atom_type_constraint(problem, X, G, H, symbol_key="symbol"):
     m = int(np.sqrt(len(X.keys())))
     assert m == len(G.nodes)
     assert m == len(H.nodes)
     for i in range(m):
         for j in range(m):
-            g_sym = G.nodes(data=True)[i]
-            h_sym = H.nodes(data=True)[j]
+            g_sym = G.nodes(data=True)[i][symbol_key]
+            h_sym = H.nodes(data=True)[j][symbol_key]
+            assert isinstance(g_sym, str)
+            assert isinstance(h_sym, str)
             if g_sym != h_sym:
                 problem += (X[i, j] == 0, "atom_type_constraint_{}-{}".format(i, j))
 
@@ -89,9 +87,9 @@ def expand_partial_aam_balanced(
         third is the ILP solution value.
     """
 
-    A_G = nx.adjacency_matrix(G, weight=bond_key)
-    A_H = nx.adjacency_matrix(H, weight=bond_key)
-    k = np.max([np.max(A_G.todense()), np.max(A_H.todense())])
+    A_G = nx.adjacency_matrix(G, weight=bond_key).todense()
+    A_H = nx.adjacency_matrix(H, weight=bond_key).todense()
+    k = np.max([np.max(A_G), np.max(A_H)])
     m = len(G.nodes)
 
     if m != len(H.nodes):
@@ -108,9 +106,7 @@ def expand_partial_aam_balanced(
     lp_X = lp.LpVariable.dicts(
         "X",
         [(i, j) for i in range(m) for j in range(m)],
-        lowBound=0,
-        upBound=1,
-        cat=lp.LpInteger,
+        cat=lp.LpBinary,
     )
 
     # Difference matrix D
@@ -120,15 +116,11 @@ def expand_partial_aam_balanced(
     lp_G = lp.LpVariable.dicts(
         "G",
         [(i, j) for i in range(m) for j in range(m)],
-        # lowBound=0,
-        # upBound=1,
         cat=lp.LpBinary,
     )
     lp_S = lp.LpVariable.dicts(
         "S",
         [(i, j) for i in range(m) for j in range(m)],
-        # lowBound=0,
-        # upBound=1,
         cat=lp.LpBinary,
     )
 
