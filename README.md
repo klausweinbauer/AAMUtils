@@ -39,8 +39,7 @@ cat testinput_extended.json
 [
     {
         "input": "CCC[Cl:1].[N:2]>>CCC[N:2].[Cl:1]",
-        "expanded_aam": "[Cl:1][CH2:5][CH2:4][CH3:3].[NH3:2]>>[ClH:1].[NH2:2][CH
-2:3][CH2:4][CH3:5]",
+        "expanded_aam": "[Cl:1][CH2:5][CH2:4][CH3:3].[NH3:2]>>[ClH:1].[NH2:2][CH2:3][CH2:4][CH3:5]",
         "ilp_status": "Optimal",
         "optimization_result": 4.0,
         "invalid_reaction_center": false,
