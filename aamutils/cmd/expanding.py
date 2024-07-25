@@ -4,9 +4,9 @@ import logging
 import rdkit.Chem.rdmolfiles as rdmolfiles
 import rdkit.Chem.rdmolops as rdmolops
 
-from utils import mol_to_graph, set_aam, graph_to_mol, is_valid_rxn_smiles
-from algorithm.ilp import expand_partial_aam_balanced
-from algorithm.aaming import get_its, get_rc, is_rc_valid
+from aamutils.utils import mol_to_graph, set_aam, graph_to_mol, is_valid_rxn_smiles
+from aamutils.algorithm.ilp import expand_partial_aam_balanced
+from aamutils.algorithm.aaming import get_its, get_rc, is_rc_valid
 
 logger = logging.getLogger("aamutils")
 

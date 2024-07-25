@@ -15,4 +15,7 @@ if __name__ == "__main__":
 
     parser = setup_argparser()
     args = parser.parse_args()
-    args.func(args)
+    try:
+        args.func(args)
+    except Exception:
+        parser.print_help()
