@@ -4,7 +4,7 @@ import logging
 import rdkit.Chem.rdmolfiles as rdmolfiles
 import rdkit.Chem.rdmolops as rdmolops
 
-from utils import get_beta_map, mol_to_graph, set_aam, graph_to_mol, is_valid_rxn_smiles
+from utils import mol_to_graph, set_aam, graph_to_mol, is_valid_rxn_smiles
 from algorithm.ilp import expand_partial_aam_balanced
 from algorithm.aaming import get_its, get_rc, is_rc_valid
 
