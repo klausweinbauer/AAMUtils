@@ -56,18 +56,18 @@ reported results can be reproduced by running the following commands:
 ### (1) Extend partial reaction center (50%, 75% and 100% missing atoms)  
 
 ```
-python3 benchmark.py --remove-mode rc --remove-ratio 0.5
+python3 benchmark.py --remove-mode rc --remove-ratio 0.5 --seed 42
 ```
 ```
-python3 benchmark.py --remove-mode rc --remove-ratio 0.75
+python3 benchmark.py --remove-mode rc --remove-ratio 0.75 --seed 42
 ```
 ```
-python3 benchmark.py --remove-mode rc --remove-ratio 1
+python3 benchmark.py --remove-mode rc --remove-ratio 1 --seed 42
 ```
 
 ### (2) Extend partial AAM with fully mapped RC 
 ```
-python3 benchmark.py --remove-mode keep_rc --remove-ratio 1
+python3 benchmark.py --remove-mode keep_rc --remove-ratio 1 --seed 42
 ```
 
 
