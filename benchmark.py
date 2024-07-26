@@ -50,7 +50,9 @@ def load_data():
     return data
 
 
-def run(n, remove_mode, remove_ratio):
+def run(n, remove_mode, remove_ratio, seed=None):
+    if seed is not None:
+        random.seed(seed)
     data = load_data()
     testcase_cnt = 0
     success_cnt = 0
@@ -136,6 +138,7 @@ if __name__ == "__main__":
     default_rm_mode = "rc"
     default_rm_ratio = 0.5
     default_n = 1000
+    default_seed = None
 
     parser = argparse.ArgumentParser(
         prog="benchmarks.py",
@@ -171,6 +174,13 @@ if __name__ == "__main__":
             + " Default: {}"
         ).format(default_rm_ratio),
     )
+    parser.add_argument(
+        "--seed",
+        default=default_seed,
+        help=(
+            "The seed used to initialize random number generation. " + "Default: {}"
+        ).format(default_seed),
+    )
 
     args = parser.parse_args()
-    run(args.n, args.remove_mode, args.remove_ratio)
+    run(args.n, args.remove_mode, args.remove_ratio, args.seed)
