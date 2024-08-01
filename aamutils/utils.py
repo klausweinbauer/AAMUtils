@@ -148,16 +148,21 @@ def its2mol(its: nx.Graph, aam_key="aam", bond_key="bond") -> Chem.rdchem.Mol:
     return graph_to_mol(_its)
 
 
-def plot_its(its, ax, bond_key="bond", aam_key="aam", symbol_key="symbol"):
+def plot_its(
+    its, ax, bond_key="bond", aam_key="aam", symbol_key="symbol", use_mol_coords=True
+):
     bond_char = {None: "∅", 1: "—", 2: "=", 3: "≡"}
     mol = its2mol(its, aam_key=aam_key, bond_key=bond_key)
 
-    positions = {}
-    conformer = rdDepictor.Compute2DCoords(mol)
-    for i, atom in enumerate(mol.GetAtoms()):
-        aam = atom.GetAtomMapNum()
-        apos = mol.GetConformer(conformer).GetAtomPosition(i)
-        positions[aam] = [apos.x, apos.y]
+    if use_mol_coords:
+        positions = {}
+        conformer = rdDepictor.Compute2DCoords(mol)
+        for i, atom in enumerate(mol.GetAtoms()):
+            aam = atom.GetAtomMapNum()
+            apos = mol.GetConformer(conformer).GetAtomPosition(i)
+            positions[aam] = [apos.x, apos.y]
+    else:
+        positions = nx.spring_layout(its)
 
     ax.axis("equal")
     ax.axis("off")
