@@ -37,13 +37,16 @@ def graph_to_mol(
         1.5: Chem.rdchem.BondType.AROMATIC,
     }
     rw_mol = Chem.rdchem.RWMol()
+    idx_map = {}
     for n, d in G.nodes(data=True):
         idx = rw_mol.AddAtom(Chem.rdchem.Atom(d[symbol_key]))
+        idx_map[n] = idx
         if aam_key in d.keys() and d[aam_key] >= 0:
             rw_mol.GetAtomWithIdx(idx).SetAtomMapNum(d[aam_key])
-        assert n == idx
     for n1, n2, d in G.edges(data=True):
-        rw_mol.AddBond(n1, n2, bond_order_map[d[bond_type_key]])
+        idx1 = idx_map[n1]
+        idx2 = idx_map[n2]
+        rw_mol.AddBond(idx1, idx2, bond_order_map[d[bond_type_key]])
     return rw_mol.GetMol()
 
 
