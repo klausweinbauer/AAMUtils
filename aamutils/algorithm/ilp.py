@@ -73,11 +73,32 @@ def _indicator_constraint(problem, D, G, S, k):
             )
 
 
+def _expected_rc_atoms_constraint(problem, G, S, expected_rc_atoms):
+    m = int(np.sqrt(len(G.keys())))
+    assert m == int(np.sqrt(len(S.keys())))
+
+    lp_io = lp.LpVariable.dicts("io", [i for i in range(m)], cat=lp.LpInteger)
+    lp_rc = lp.LpVariable.dicts("rc", [i for i in range(m)], cat=lp.LpBinary)
+    for i in range(m):
+        problem += (
+            lp_io[i] == lp.lpSum([G[i, j] + S[i, j] for j in range(m)]),
+            "idx_io_sum_{}".format(i),
+        )
+        problem += (lp_io[i] <= m * lp_rc[i], "is_rc_indicator1_{}".format(i))
+        problem += (lp_io[i] >= lp_rc[i], "is_rc_indicator_{}".format(i))
+
+    problem += (
+        expected_rc_atoms == lp.lpSum([lp_rc[i] for i in range(m)]),
+        "rc_atom_constraint",
+    )
+
+
 def expand_partial_aam_balanced(
     G: nx.Graph,
     H: nx.Graph,
     beta_map: None | list[tuple[int, int, int]] = None,
     bond_key="bond",
+    expected_rc: None | tuple[None | int, None | int] = None,
 ) -> tuple[np.ndarray, str, float]:
     """Function to extend the partial atom-atom map beta of the balanced
     reaction G \u2192 H to a full atom-atom map based on the Minimal Chemical
@@ -89,6 +110,14 @@ def expand_partial_aam_balanced(
         specified the existing mapping in G and H will be used.
     :param bond_key: (optional) The edge label in G and H which encodes the
         bond order.
+    :param expected_rc: (optional) Configuration for the expected reaction
+        center. The first parameter in the tuple is the number of atoms and
+        the second parameter is the number of bonds. The atoms and bonds are
+        only constraint if the value is not None. It is possible to constraint
+        only atoms or only bonds. Constraining the expected reaction center can
+        help to get correct AAM for reactions where the Minimal Chemical
+        Distance is unsuitable, e.g. for a Diels-Alder reaction you can set
+        expected_rc to (6, 6).
 
     :returns: A 3-tuple. The first element is the mapping matrix X. The second
         element is the status string of the ILP solver (e.g. 'Optimal') and the
@@ -142,6 +171,14 @@ def expand_partial_aam_balanced(
         lp_f == lp.lpSum([lp_G[i, j] + lp_S[i, j] for i in range(m) for j in range(m)]),
         "objective",
     )
+    if expected_rc is not None:
+        if not isinstance(expected_rc, tuple) or len(expected_rc) != 2:
+            raise ValueError("Argument expected_rc must be a tuple of size 2.")
+        expected_rc_atoms, expected_rc_bonds = expected_rc
+        if expected_rc_bonds is not None:
+            problem += (lp_f == 2 * expected_rc_bonds, "rc_bond_constraint")
+        if expected_rc_atoms is not None:
+            _expected_rc_atoms_constraint(problem, lp_G, lp_S, expected_rc_atoms)
 
     _bijection_constraint(problem, lp_X)
     _beta_constraint(problem, lp_X, beta_map)
