@@ -57,11 +57,19 @@ def _indicator_constraint(problem, D, G, S, k):
         for j in range(m):
             problem += (
                 D[i, j] <= k * G[i, j],
-                "g_indicator_constraint_lower_{}-{}".format(i, j),
+                "g_indicator_constraint1_{}-{}".format(i, j),
+            )
+            problem += (
+                D[i, j] >= -k + G[i, j] * (k + 1),
+                "g_indicator_constraint2_{}-{}".format(i, j),
             )
             problem += (
                 -D[i, j] <= k * S[i, j],
-                "s_indicator_constraint_lower_{}-{}".format(i, j),
+                "s_indicator_constraint1_{}-{}".format(i, j),
+            )
+            problem += (
+                -D[i, j] >= -k + S[i, j] * (k + 1),
+                "s_indicator_constraint2_{}-{}".format(i, j),
             )
 
 
