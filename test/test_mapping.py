@@ -14,3 +14,10 @@ def test_mapper_with_expected_rc():
     rc = get_rc(its)
     assert len(rc.nodes) == 6
     assert len(rc.edges) == 6
+
+
+def test_mapper_infeasable():
+    smiles = "C>>C"
+    mapper = Mapper()
+    aam_smiles = mapper.get_aam(smiles, expected_rc=(2, 2))
+    assert aam_smiles is None

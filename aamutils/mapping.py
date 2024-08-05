@@ -20,6 +20,8 @@ class Mapper:
         H = mol_to_graph(h_mol)
 
         M, status, e_diff = expand_partial_aam_balanced(G, H, expected_rc=expected_rc)
+        if status != "Optimal":
+            return None
 
         set_aam(G, H, M)
 
@@ -31,7 +33,7 @@ class Mapper:
         )
         return aam_smiles
 
-    def get_aam(self, smiles: str | list[str], expected_rc) -> str | list[str]:
+    def get_aam(self, smiles: str | list[str], expected_rc=None) -> str | list[str]:
         return_list = True
         if isinstance(smiles, str):
             smiles = [smiles]
@@ -47,7 +49,6 @@ class Mapper:
                 )
             )
         aam_smiles = []
-        print(expected_rc)
         for smiles, exp_rc in zip(smiles, expected_rc):
             aam_smiles.append(self._map_rxn(smiles, expected_rc=exp_rc))
         if not return_list:
