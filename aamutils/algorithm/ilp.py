@@ -99,6 +99,7 @@ def expand_partial_aam_balanced(
     beta_map: None | list[tuple[int, int, int]] = None,
     bond_key="bond",
     expected_rc: None | tuple[None | int, None | int] = None,
+    time_limit: None | int = None,
 ) -> tuple[np.ndarray, str, float]:
     """Function to extend the partial atom-atom map beta of the balanced
     reaction G \u2192 H to a full atom-atom map based on the Minimal Chemical
@@ -118,6 +119,7 @@ def expand_partial_aam_balanced(
         help to get correct AAM for reactions where the Minimal Chemical
         Distance is unsuitable, e.g. for a Diels-Alder reaction you can set
         expected_rc to (6, 6).
+    :param time_limit: (optional) Set a timeout for the solver.
 
     :returns: A 3-tuple. The first element is the mapping matrix X. The second
         element is the status string of the ILP solver (e.g. 'Optimal') and the
@@ -186,7 +188,7 @@ def expand_partial_aam_balanced(
     _edge_diff_constraint(problem, lp_X, lp_D, A_G, A_H)
     _indicator_constraint(problem, lp_D, lp_G, lp_S, k)
 
-    status = problem.solve(lp.PULP_CBC_CMD(logPath=r"solver.log"))
+    status = problem.solve(lp.PULP_CBC_CMD(logPath=r"solver.log", timeLimit=time_limit))
 
     np_X = np.zeros([m, m], dtype=np.int32)
     for (i, j), v in lp_X.items():
