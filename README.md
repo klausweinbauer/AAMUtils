@@ -13,6 +13,8 @@ pip install aamutils
 
 ## Usage
 
+### Use in command line
+
 The input is a list of partial atom-atom-maps (AAMs). Data is read line-by-line
 from a text file. Each line should contain one reaction SMILES.
 
@@ -46,6 +48,17 @@ cat testinput_extended.json
         "reaction_edges": 4
     }
 ]
+```
+### Use in script
+  ```python
+    from aamutils.aam_expand import extend_aam_from_rsmi
+
+    rsmi = "CC[CH2:3][Cl:1].[N:2]>>CC[CH2:3][N:2].[Cl:1]"
+
+    result_smiles = extend_aam_from_rsmi(rsmi)
+
+    print(result_smiles)
+    >>> "[Cl:1][CH2:3][CH2:5][CH3:4].[NH3:2]>>[ClH:1].[NH2:2][CH2:3][CH2:5][CH3:4]"
 ```
 
 ## Benchmark
