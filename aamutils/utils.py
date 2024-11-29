@@ -17,7 +17,10 @@ def mol_to_graph(mol: Chem.rdchem.Mol) -> nx.Graph:
     g = nx.Graph()
     for atom in mol.GetAtoms():
         aam = atom.GetAtomMapNum()
-        g.add_node(atom.GetIdx(), symbol=atom.GetSymbol(), aam=aam)
+        formal_charge = atom.GetFormalCharge()  # Get the formal charge of the atom
+        g.add_node(
+            atom.GetIdx(), symbol=atom.GetSymbol(), aam=aam, formal_charge=formal_charge
+        )  # Store formal charge
     for bond in mol.GetBonds():
         bond_type = str(bond.GetBondType()).split(".")[-1]
         bond_order = 1
@@ -27,14 +30,16 @@ def mol_to_graph(mol: Chem.rdchem.Mol) -> nx.Graph:
     return g
 
 
-def smiles_to_graph(smiles: str) -> nx.Graph | tuple[nx.Graph, nx.Graph]:
+def smiles_to_graph(
+    smiles: str, sanitize: bool = True
+) -> nx.Graph | tuple[nx.Graph, nx.Graph]:
     if ">>" in smiles:
         smiles_token = smiles.split(">>")
-        g = mol_to_graph(rdmolfiles.MolFromSmiles(smiles_token[0]))
-        h = mol_to_graph(rdmolfiles.MolFromSmiles(smiles_token[1]))
+        g = mol_to_graph(rdmolfiles.MolFromSmiles(smiles_token[0], sanitize=sanitize))
+        h = mol_to_graph(rdmolfiles.MolFromSmiles(smiles_token[1], sanitize=sanitize))
         return g, h
     else:
-        return mol_to_graph(rdmolfiles.MolFromSmiles(smiles))
+        return mol_to_graph(rdmolfiles.MolFromSmiles(smiles, sanitize=sanitize))
 
 
 def graph_to_mol(
@@ -54,6 +59,8 @@ def graph_to_mol(
         idx_map[n] = idx
         if aam_key in d.keys() and d[aam_key] >= 0:
             rw_mol.GetAtomWithIdx(idx).SetAtomMapNum(d[aam_key])
+        if "formal_charge" in d:  # Set the formal charge for the atom
+            rw_mol.GetAtomWithIdx(idx).SetFormalCharge(d["formal_charge"])
     for n1, n2, d in G.edges(data=True):
         idx1 = idx_map[n1]
         idx2 = idx_map[n2]
