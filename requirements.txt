@@ -1,6 +1,6 @@
 fgutils>=0.0.17,<0.1.0
 networkx>=3.4.2
-pillow==12.1.1
+pillow==12.2.0
 PuLP==2.8.0
 rdkit>=2024.3.3
 scipy>=1.14.0
