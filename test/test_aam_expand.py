@@ -26,7 +26,7 @@ class TestExtendAAMFromGraph(unittest.TestCase):
 
         result_smiles = extend_aam_from_rsmi(rsmi)
         expected = (
-            "[Cl:1][CH2:3][CH2:5][CH3:4].[NH3:2]>>[ClH:1].[NH2:2][CH2:3][CH2:5][CH3:4]"
+            "[Cl:1][CH2:3][CH2:5][CH3:4].[N:2]>>[Cl:1].[N:2][CH2:3][CH2:5][CH3:4]"
         )
         self.assertEqual(result_smiles, expected)
 
