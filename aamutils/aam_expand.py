@@ -1,8 +1,7 @@
 import networkx as nx
 import rdkit.Chem.rdmolfiles as rdmolfiles
 from aamutils.algorithm.ilp import expand_partial_aam_balanced
-from aamutils.utils import smiles_to_graph, graph_to_mol, set_aam, mol_to_graph
-from typing import Optional
+from aamutils.utils import graph_to_mol, set_aam, mol_to_graph
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 
 
@@ -72,9 +71,9 @@ def extend_aam_from_rsmi(partial_rxn_smiles: str, time_limit: int = 1200) -> str
 
     if not status == "Optimal":
         print(
-        f"ILP solver did not find an optimal solution (status='{status}') "
-        f"for: {partial_rxn_smiles}"
-    )
+            f"ILP solver did not find an optimal solution (status='{status}') "
+            f"for: {partial_rxn_smiles}"
+        )
 
     set_aam(g_graph, h_graph, mapping_matrix)
 
