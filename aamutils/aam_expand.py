@@ -45,21 +45,7 @@ def extend_aam_from_graph(G: nx.Graph, H: nx.Graph) -> str:
     return result_smiles
 
 
-def extend_aam_from_rsmi(rsmi: str) -> str:
-    """
-    Extends atom-atom mappings (AAM) from a reaction SMILES (RSMI) string,
-    and returns the resulting reaction SMILES string.
-
-    Parameters:
-    - rsmi (str): A reaction SMILES string in the format 'reactant>>product'.
-
-    Returns:
-    - str: A reaction SMILES string with extended atom mappings.
-    """
-    G, H = smiles_to_graph(rsmi)
-    return extend_aam_from_graph(G, H)
-
-def extend_aam_from_rsmi_(partial_rxn_smiles: str, time_limit: int = 1200) -> str:
+def extend_aam_from_rsmi(partial_rxn_smiles: str, time_limit: int = 1200) -> str:
     assert isinstance(partial_rxn_smiles, str) and ">>" in partial_rxn_smiles, (
         f"Expected reaction string containing '>>', got: {partial_rxn_smiles!r}"
     )
