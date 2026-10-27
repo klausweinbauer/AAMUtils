@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aamutils"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
 	{name="Klaus Weinbauer", email="klaus@bioinf.uni-leipzig.de"}
 	]
 description = "Collection of atom-atom-mapping utility functions."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 classifiers = [
 	"Programming Language :: Python :: 3",
 	"License :: OSI Approved :: MIT License",
