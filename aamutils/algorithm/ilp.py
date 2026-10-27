@@ -126,8 +126,13 @@ def expand_partial_aam_balanced(
         third is the ILP solution value.
     """
 
-    A_G = nx.adjacency_matrix(G, weight=bond_key).todense()
-    A_H = nx.adjacency_matrix(H, weight=bond_key).todense()
+    # Scale bond orders by 2 so that aromatic bonds (stored as 1.5) become
+    # integers. Otherwise the edge-difference D can take fractional values
+    # (e.g. 0.5 for an aromatic -> single bond change) that are not
+    # representable by the integer threshold (=1) of the indicator constraints,
+    # making the ILP infeasible.
+    A_G = np.array(nx.adjacency_matrix(G, weight=bond_key).todense() * 2)
+    A_H = np.array(nx.adjacency_matrix(H, weight=bond_key).todense() * 2)
     k = np.max([np.max(A_G), np.max(A_H)])
     m = len(G.nodes)
 
@@ -188,7 +193,9 @@ def expand_partial_aam_balanced(
     _edge_diff_constraint(problem, lp_X, lp_D, A_G, A_H)
     _indicator_constraint(problem, lp_D, lp_G, lp_S, k)
 
-    status = problem.solve(lp.PULP_CBC_CMD(logPath=r"solver.log", timeLimit=time_limit))
+    status = problem.solve(
+        lp.PULP_CBC_CMD(msg=0, logPath=r"solver.log", timeLimit=time_limit)
+    )
 
     np_X = np.zeros([m, m], dtype=np.int32)
     for (i, j), v in lp_X.items():
